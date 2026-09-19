@@ -1,0 +1,123 @@
+# =========================================================================
+# firstdtc - messages
+# =========================================================================
+# Toutes les chaînes affichées aux joueurs sont ici, regroupées par contexte.
+# Format MiniMessage : <red>, <gray>, <gradient:#XXX:#YYY>, <b>, <hover:...>, etc.
+#
+# ~~ DA de couleur ~~
+#   PREFIXE  : gradient bleu ("firstdtc") + » blanc, injecté via %prefix%
+#   BLANC    : texte principal, chiffres, pseudos, noms d'îles
+#   GRIS     : labels secondaires, unités, texte discret
+#   ROUGE    : erreurs, mauvaises nouvelles, timeouts, actions bloquées
+#
+# ~~ Pipeline de rendu ~~
+# Chaque ligne passe par :
+#   1. Substitution auto de %prefix% (défini ci-dessous) dans tous les messages
+#   2. Substitution des placeholders internes (%hp%, %damage%, ...)
+#   3. PlaceholderAPI (si installé) : %player_name%, %nexo_glyph_x%, ...
+#   4. MiniMessage : rendu final (tags Nexo <glyph:name> si Nexo est là)
+#
+# ~~ Placeholders internes ~~
+#   %hp%       %maxhp%   %time%      %duration%
+#   %leader%   %island%  %player%
+#   %damage%   %rank%    %islands%
+#   %rank%     %mode%    %usage%     %desc%
+#
+# ~~ Placeholders PAPI exposés par ce plugin ~~
+#   Préfixe %firstdtc_...% ou %dtc_...% (alias).
+#   Globaux : running, hp, maxhp, hp_percent, time, time_seconds, islands,
+#             top_<N>_island, top_<N>_damage, top_<N>_leader
+#   Joueur  : my_damage, my_island, my_island_damage, my_island_rank
+#
+# Rechargement à chaud : /firstdtc reload
+# =========================================================================
+
+
+# -------------------------------------------------------------------------
+# Préfixe (une seule source de vérité, réutilisé via %prefix%)
+# -------------------------------------------------------------------------
+prefix: "<gradient:#07B9FB:#0F68FF><b>firstdtc</b></gradient> <white><b>»</b></white> "
+
+
+# -------------------------------------------------------------------------
+# Boss bar (haut de l'écran)
+# -------------------------------------------------------------------------
+bossbar:
+  title: "<gradient:#07B9FB:#0F68FF><b>Le Core</b></gradient> <dark_gray>|</dark_gray> <white>%hp%<gray>/<white>%maxhp% <dark_gray>|</dark_gray> <white>%time%"
+
+
+# -------------------------------------------------------------------------
+# Broadcast global : début / fin de partie
+# -------------------------------------------------------------------------
+event:
+  start: "%prefix%<white>Le Core est apparu ! Cassez le OneBlock de votre île pour lui infliger des dégâts. <gray>(<white>%duration%<gray>s)"
+  end-victory: "%prefix%<white><b>Le Core a été détruit !"
+  end-timeout: "%prefix%<red>Temps écoulé — le Core a survécu avec <white>%hp%<red> PV."
+  end-finish: "%prefix%<white>Événement terminé par un administrateur <gray>(<white>%hp%<gray> PV restants)<white>. Récompenses distribuées."
+  end-empty: "%prefix%<gray>Aucune île n'a participé à l'événement."
+
+
+# -------------------------------------------------------------------------
+# Récap privé envoyé à chaque île en fin de partie
+# -------------------------------------------------------------------------
+summary:
+  header: "%prefix%<white>Résumé des dégâts <gray>-</gray> <white>%island%"
+  line: "<gray> - <white>%player%<dark_gray>:</dark_gray> <white>%damage% <gray>dégâts"
+  total: "%prefix%<gray>Total île <dark_gray>|</dark_gray> <white>%damage% <gray>dégâts <dark_gray>|</dark_gray> <gray>classement <white>#%rank%"
+
+
+# -------------------------------------------------------------------------
+# Notification de récompense (envoyée au chef d'île en ligne)
+# -------------------------------------------------------------------------
+rewards:
+  general: "%prefix%<white>Votre île a reçu la récompense de participation."
+  ranked: "%prefix%<white>Votre île termine <b>#%rank%</b> et reçoit un bonus."
+
+
+# -------------------------------------------------------------------------
+# Commandes / retours admins
+# -------------------------------------------------------------------------
+# Chaque clé a un fallback FR côté code : supprimer une clé fait retomber
+# sur le défaut, jamais sur du vide.
+command:
+  usage: "%prefix%<gray>Tape <white>/firstdtc help<gray> pour voir toutes les commandes."
+  already-running: "%prefix%<red>Un événement est déjà en cours."
+  not-running: "%prefix%<red>Aucun événement en cours."
+  status-running: "%prefix%<white>%hp%<gray>/<white>%maxhp% <gray>PV <dark_gray>|</dark_gray> <white>%time% <gray>restants <dark_gray>|</dark_gray> <white>%islands% <gray>îles"
+  status-idle: "%prefix%<gray>Aucun événement en cours."
+  reload-ok: "%prefix%<white>Config & messages rechargés."
+
+  # ~~ /firstdtc help ~~
+  help:
+    header: "<gradient:#07B9FB:#0F68FF><b>=== Commandes firstdtc ===</b></gradient>"
+    line-format: "<white>/firstdtc %usage% <dark_gray>-</dark_gray> <gray>%desc%"
+    footer: "<dark_gray>Alias : <gray>/dtc, /destroythecore"
+    desc:
+      help: "Affiche cette aide"
+      start: "Lance une nouvelle partie Destroy the Core"
+      finish: "Termine la partie maintenant EN distribuant les récompenses"
+      stop: "Annule la partie en cours (sans récompenses)"
+      status: "Affiche PV / temps / îles participantes"
+      reload: "Recharge config.yml + messages.yml"
+      reward-general: "Teste rewards.general pour l'île du joueur"
+      reward-rank: "Teste rewards.ranks.<N> pour l'île du joueur"
+      reward-all: "Teste général + tous les rangs configurés"
+
+  # ~~ /firstdtc reward ... ~~
+  # Placeholders : %rank% %mode% %island% %leader%
+  reward:
+    usage: "%prefix%<red>Usage <gray>:</gray> <white>/firstdtc reward <general|rank <N>|all> <joueur>"
+    usage-rank: "%prefix%<red>Usage <gray>:</gray> <white>/firstdtc reward rank <N> <joueur>"
+    invalid-rank: "%prefix%<red>Le rang doit être un entier positif, reçu <white>%rank%"
+    no-rank-configured: "%prefix%<red>Aucun <white>rewards.ranks.%rank%<red> configuré — rien à exécuter."
+    unknown-mode: "%prefix%<red>Mode inconnu <white>%mode%<red>. Utilise <white>general<red>, <white>rank<red> ou <white>all<red>."
+    fired-general: "%prefix%<white>rewards.general <gray>déclenché pour l'île <white>%island%<gray> (chef <white>%leader%<gray>)."
+    fired-all: "%prefix%<white>rewards.general + tous les rangs <gray>déclenchés pour l'île <white>%island%<gray> (chef <white>%leader%<gray>)."
+    fired-rank: "%prefix%<white>rewards.ranks.%rank% <gray>déclenché pour l'île <white>%island%<gray> (chef <white>%leader%<gray>)."
+
+  # ~~ Résolution joueur/île pour /firstdtc reward ~~
+  # Placeholder : %player%
+  player:
+    unknown: "%prefix%<red>Joueur inconnu <white>%player%"
+    not-in-ssb: "%prefix%<red>Le joueur <white>%player%<red> n'a jamais été vu par SuperiorSkyblock2."
+    no-island: "%prefix%<red>Le joueur <white>%player%<red> n'a pas d'île."

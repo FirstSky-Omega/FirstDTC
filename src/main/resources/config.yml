@@ -1,0 +1,152 @@
+# =========================================================================
+# firstdtc - configuration principale
+# =========================================================================
+# Toutes les chaînes affichées aux joueurs se trouvent dans messages.yml.
+# Ce fichier ne contient QUE les paramètres de gameplay.
+#
+# Rechargement à chaud : /firstdtc reload
+# =========================================================================
+
+
+# -------------------------------------------------------------------------
+# 1. Partie
+# -------------------------------------------------------------------------
+game:
+  # Durée d'une partie en secondes (timeout).
+  duration-seconds: 600
+  # HP retirés au core par bloc cassé.
+  damage-per-block: 1.0
+  # Points de vie totaux du core (valeur fixe, ne dépend pas du nombre d'îles).
+  health: 5000.0
+
+
+# -------------------------------------------------------------------------
+# 2. Où compter les casses
+# -------------------------------------------------------------------------
+# Filtres cumulatifs : un bloc doit passer TOUS les filtres pour compter.
+filters:
+  # Mondes autorisés. Liste vide = tous les mondes (recommandé, car le monde
+  # des îles SSB s'appelle souvent autre chose que "world" ; ex. "worlds").
+  worlds: []
+
+  # Seul un membre de l'île où le bloc est cassé peut compter des dégâts.
+  # true = empêche les raids/griefs de compter, recommandé.
+  require-own-island: true
+
+  # Matériau optionnel. Liste vide = tous les matériaux acceptés à la
+  # position OneBlock (recommandé, vu que le OneBlock change de matériau
+  # à chaque phase). Ne remplir que pour restreindre (ex. phase précise).
+  allowed-blocks: []
+  # Exemple :
+  # allowed-blocks:
+  #   - GRASS_BLOCK
+  #   - STONE
+
+
+# -------------------------------------------------------------------------
+# 3. Position du OneBlock
+# -------------------------------------------------------------------------
+# Le SSBOneBlock place TOUJOURS son bloc généré à un offset fixe depuis le
+# centre de l'île (config/modules/OneBlock/config.yml -> block-offset).
+# Défaut SSBOneBlock : "-0.5, -1, -0.5" -> équivaut aux offsets bloc
+# (0, -1, 0) ci-dessous. Si tu changes block-offset côté SSBOneBlock,
+# recopie les mêmes valeurs (arrondies à l'entier inférieur) ici.
+oneblock:
+  only-oneblock: true
+  offset-x: 0
+  offset-y: -1
+  offset-z: 0
+
+
+# -------------------------------------------------------------------------
+# 4. Boss bar (barre en haut de l'écran)
+# -------------------------------------------------------------------------
+# Titre : voir messages.yml -> bossbar.title (utilise %hp% %maxhp% %time%).
+bossbar:
+  enabled: true
+  color: RED           # PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE
+  overlay: PROGRESS    # PROGRESS, NOTCHED_6, NOTCHED_10, NOTCHED_12, NOTCHED_20
+
+
+# -------------------------------------------------------------------------
+# 5. Debug
+# -------------------------------------------------------------------------
+# Trace chaque BlockBreakEvent qui arrive au plugin :
+#   [break] hit  : compté comme dégât
+#   [break] skip : rejeté (avec la raison exacte)
+#   [break] dedupe : doublon dans le même tick (fake replay du module)
+# À laisser sur false en prod (chaque cassage = 1 ligne console + I/O).
+# N'active que ponctuellement pour diagnostiquer.
+debug: false
+
+
+# -------------------------------------------------------------------------
+# 6. Boss custom & hooks
+# -------------------------------------------------------------------------
+# Commandes exécutées depuis la console au start et à la fin d'une partie.
+# Parfait pour faire spawner un boss texturé (mob Nexo, ModelEngine,
+# MythicMobs, ItemsAdder...), jouer un son global, ouvrir un menu, etc.
+# Elles tournent sur la global region -> safe Folia.
+#
+# Placeholders substitués AVANT dispatch :
+#   %hp%        HP de départ du boss (int)
+#   %maxhp%     idem au start
+#   %duration%  durée totale en secondes
+#   %world% %x% %y% %z%   coords du bloc `hooks.spawn.*` ci-dessous
+#
+# Rien à faire si tu veux garder juste la boss bar : laisse les listes vides.
+hooks:
+  # Position injectée dans %world% / %x% / %y% / %z%. Laisse `world` vide si
+  # tes commandes n'utilisent pas de coords (elles tourneront quand même,
+  # les autres placeholders resteront disponibles).
+  spawn:
+    world: ""
+    x: 0
+    y: 100
+    z: 0
+
+  on-start:
+    # -- Exemples (décommente selon ton stack) --
+    # Nexo :
+    #   - "nexo mob spawn corekeeper %world%,%x%,%y%,%z%"
+    # MythicMobs :
+    #   - "mm mobs spawn TheCore 1 %world%,%x%,%y%,%z%"
+    # ItemsAdder :
+    #   - "iamob spawn iaboss:the_core %world% %x% %y% %z% 1"
+    # Vanilla + son global :
+    #   - "summon zombie %x% %y% %z% {Tags:['firstdtc_boss'],CustomName:'\"The Core\"',CustomNameVisible:1b}"
+    #   - "execute at @a run playsound minecraft:entity.ender_dragon.growl master @a"
+    []
+
+  on-end:
+    # Nettoyage : cible ce que tu as spawn au start.
+    #   - "execute in %world% run kill @e[tag=firstdtc_boss]"
+    []
+
+
+# -------------------------------------------------------------------------
+# 7. Récompenses
+# -------------------------------------------------------------------------
+# Toutes les commandes sont exécutées depuis la console au nom du CHEF de
+# l'île. Placeholders disponibles :
+#   %leader%  - pseudo du chef d'île
+#   %island%  - nom de l'île
+#   %damage%  - dégâts totaux de l'île (arrondis)
+#   %rank%    - rang de l'île dans le classement
+rewards:
+  # Données à toute île ayant participé (au moins 1 point de dégât).
+  general:
+    - "eco give %leader% 100"
+    - "give %leader% diamond 3"
+
+  # Bonus supplémentaires par rang exact du classement.
+  ranks:
+    "1":
+      - "eco give %leader% 5000"
+      - "give %leader% netherite_ingot 2"
+    "2":
+      - "eco give %leader% 2500"
+      - "give %leader% diamond_block 4"
+    "3":
+      - "eco give %leader% 1000"
+      - "give %leader% diamond_block 2"

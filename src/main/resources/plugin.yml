@@ -1,0 +1,27 @@
+name: FirstDTC
+version: '${project.version}'
+main: fr.first.firstdtc.FirstDtcPlugin
+api-version: '1.21'
+folia-supported: true
+authors: [ First ]
+description: Événement "Destroy the Core" en équipe pour les îles SuperiorSkyblock2.
+# SuperiorSkyblock2 devrait être un "depend:" dur, mais le loader Paper +
+# les reloads à chaud (PlugManX, /reload, etc.) tombent sur
+# UnknownDependencyException même quand SSB2 est bien chargé, parce que le
+# LegacyPluginLoadingStrategy ne revoit pas les providers déjà enregistrés.
+# On le déclare donc en soft-depend et on refait la vérification à onEnable :
+# si SSB2 est absent, le plugin se désactive proprement avec un message clair.
+softdepend: [ SuperiorSkyblock2, PlaceholderAPI, Nexo ]
+
+commands:
+  firstdtc:
+    description: Contrôle l'événement Destroy the Core.
+    aliases: [ dtc, destroythecore ]
+    usage: /firstdtc help
+    permission: firstdtc.admin
+    permission-message: Vous n'avez pas la permission.
+
+permissions:
+  firstdtc.admin:
+    description: Permet de démarrer/arrêter l'événement.
+    default: op
