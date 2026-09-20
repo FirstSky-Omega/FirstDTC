@@ -74,14 +74,7 @@ public final class FirstDtcExpansion extends PlaceholderExpansion {
         // Constants that never depend on game state.
         if (key.equals("running")) return Boolean.toString(game != null && !game.isEnded());
 
-        // Static placeholders that should still return sensible values when
-        // no run is active - callers can decorate them however they like.
-        if (game == null) return switch (key) {
-            case "hp", "maxhp", "time_seconds", "islands" -> "0";
-            case "time"                                    -> "00:00";
-            case "hp_percent"                              -> "0%";
-            default                                        -> handleOfflineMy(key, player);
-        };
+        if (game == null) return "";
 
         return switch (key) {
             case "hp"           -> Long.toString(Math.round(Math.max(0.0, game.getHealth())));
@@ -149,20 +142,6 @@ public final class FirstDtcExpansion extends PlaceholderExpansion {
                 int rank = rankOf(game, island);
                 yield rank <= 0 ? "-" : Integer.toString(rank);
             }
-            default -> null;
-        };
-    }
-
-    /**
-     * When there's no active game we still want per-player placeholders to
-     * degrade gracefully rather than returning null (PAPI then shows the raw
-     * placeholder text, which looks broken in a scoreboard/hologram).
-     */
-    private @Nullable String handleOfflineMy(String key, OfflinePlayer player) {
-        if (!key.startsWith("my_")) return null;
-        return switch (key) {
-            case "my_island", "my_island_rank" -> "-";
-            case "my_damage", "my_island_damage" -> "0";
             default -> null;
         };
     }
