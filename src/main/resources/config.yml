@@ -63,7 +63,7 @@ oneblock:
 # -------------------------------------------------------------------------
 # Titre : voir messages.yml -> bossbar.title (utilise %hp% %maxhp% %time%).
 bossbar:
-  enabled: true
+  enabled: false        # Géré par VeltekHud
   color: RED           # PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE
   overlay: PROGRESS    # PROGRESS, NOTCHED_6, NOTCHED_10, NOTCHED_12, NOTCHED_20
 
