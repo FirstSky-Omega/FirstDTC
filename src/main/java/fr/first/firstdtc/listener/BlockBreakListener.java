@@ -16,6 +16,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.Set;
 import java.util.UUID;
@@ -136,6 +137,11 @@ public final class BlockBreakListener implements Listener {
         plugin.getGameManager().recordBreak(player, island);
         debug("hit: " + player.getName() + " -> island " + island.getUniqueId()
                 + " (cancelled=" + event.isCancelled() + ")");
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        lastHitByPlayer.remove(event.getPlayer().getUniqueId());
     }
 
     // ------------------------------------------------------------------

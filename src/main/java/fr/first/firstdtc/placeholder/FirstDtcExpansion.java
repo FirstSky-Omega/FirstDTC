@@ -168,11 +168,7 @@ public final class FirstDtcExpansion extends PlaceholderExpansion {
     }
 
     private static int rankOf(CoreGame game, Island island) {
-        List<IslandStats> ranked = game.snapshotByRank();
-        for (int i = 0; i < ranked.size(); i++) {
-            if (ranked.get(i).island().getUniqueId().equals(island.getUniqueId())) return i + 1;
-        }
-        return -1;
+        return game.rankOf(island);
     }
 
     private static String islandName(Island island) {

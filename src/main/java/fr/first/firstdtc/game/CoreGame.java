@@ -56,6 +56,7 @@ public final class CoreGame {
      * instead of one per placeholder resolution.
      */
     private volatile List<IslandStats> rankingCache = null;
+    private volatile Map<UUID, Integer> rankIndexCache = null;
 
     /**
      * Cached bossbar title, keyed by (health rounded, seconds left). Adventure
@@ -64,6 +65,7 @@ public final class CoreGame {
      * matters at 1 tick/s across many players.
      */
     private volatile long lastTitleKey = Long.MIN_VALUE;
+    private volatile float lastBossProgress = -1f;
 
     public CoreGame(FirstDtcPlugin plugin) {
         this.plugin = plugin;
@@ -127,7 +129,11 @@ public final class CoreGame {
             lastTitleKey = titleKey;
             bossBar.name(renderTitle());
         }
-        bossBar.progress((float) Math.max(0.0, Math.min(1.0, health / maxHealth)));
+        float progress = (float) Math.max(0.0, Math.min(1.0, health / maxHealth));
+        if (progress != lastBossProgress) {
+            lastBossProgress = progress;
+            bossBar.progress(progress);
+        }
     }
 
     /**
@@ -169,7 +175,8 @@ public final class CoreGame {
         IslandStats stats = statsByIsland.computeIfAbsent(island.getUniqueId(),
                 k -> new IslandStats(island));
         stats.add(player.getUniqueId(), player.getName(), dmg);
-        rankingCache = null; // invalidate; next reader rebuilds lazily
+        rankingCache = null;  // invalidate; next reader rebuilds lazily
+        rankIndexCache = null;
 
         if (health <= 0) {
             end(EndReason.VICTORY);
@@ -379,8 +386,20 @@ public final class CoreGame {
         if (cached != null) return cached;
         List<IslandStats> list = new ArrayList<>(statsByIsland.values());
         list.sort(Comparator.comparingDouble(IslandStats::total).reversed());
-        rankingCache = list; // benign race - worst case is a duplicate sort
+        Map<UUID, Integer> index = new java.util.HashMap<>(list.size() * 2);
+        for (int i = 0; i < list.size(); i++) index.put(list.get(i).island().getUniqueId(), i + 1);
+        rankIndexCache = index; // benign race - worst case is a duplicate build
+        rankingCache = list;
         return list;
+    }
+
+    /** O(1) rank lookup. Returns -1 if the island hasn't dealt damage. */
+    public int rankOf(Island island) {
+        if (island == null) return -1;
+        Map<UUID, Integer> index = rankIndexCache;
+        if (index == null) { snapshotByRank(); index = rankIndexCache; }
+        Integer r = index == null ? null : index.get(island.getUniqueId());
+        return r == null ? -1 : r;
     }
 
     /** @return the stats bucket for {@code island}, or null if the island hasn't dealt damage yet. */
