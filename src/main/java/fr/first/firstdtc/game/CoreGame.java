@@ -228,20 +228,7 @@ public final class CoreGame {
                 "hp",       roundedString(Math.max(0.0, health)),
                 "maxhp",    roundedString(maxHealth),
                 "duration", Integer.toString(cfg.getDurationSeconds()));
-        for (String template : commands) {
-            String cmd = template;
-            for (Map.Entry<String, String> e : ph.entrySet()) {
-                cmd = cmd.replace("%" + e.getKey() + "%", e.getValue());
-            }
-            final String finalCmd = cmd;
-            plugin.getScheduler().runGlobal(() -> {
-                try {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCmd);
-                } catch (Throwable t) {
-                    plugin.getLogger().warning("Commande de hook échouée : '" + finalCmd + "' - " + t.getMessage());
-                }
-            });
-        }
+        plugin.getRewardService().dispatchAll(commands, ph);
     }
 
     private void broadcastEnd(EndReason reason) {

@@ -221,12 +221,13 @@ public final class FirstDtcCommand implements CommandExecutor, TabCompleter {
 
     /** Résout une île SSB depuis un pseudo, retourne null et affiche un message si échec. */
     private Island resolveIsland(CommandSender sender, PluginConfig cfg, String playerName) {
+        // getOfflinePlayer(name) peut faire une requête HTTP bloquante vers l'API
+        // Mojang si le joueur n'est pas en cache — on refuse plutôt.
         OfflinePlayer op = Bukkit.getOfflinePlayerIfCached(playerName);
-        if (op == null) op = Bukkit.getOfflinePlayer(playerName);
         Map<String, String> ph = Map.of("player", playerName);
-        if (op.getUniqueId() == null) {
+        if (op == null) {
             sender.sendMessage(Msg.parse(cfg.messages().get("command.player.unknown",
-                    "%prefix%<red>Joueur inconnu <white>%player%"), ph));
+                    "%prefix%<red>Joueur inconnu ou jamais connecté <white>%player%"), ph));
             return null;
         }
         SuperiorPlayer sp = SuperiorSkyblockAPI.getPlayer(op.getUniqueId());

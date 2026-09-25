@@ -8,6 +8,7 @@ import fr.first.firstdtc.util.Msg;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,9 +41,7 @@ public final class RewardService {
     /** Runs the {@code rewards.general} block for one island. */
     public void giveGeneral(Island island, int rank, double damage, boolean notifyLeader) {
         Map<String, String> ph = placeholders(island, rank, damage);
-        for (String template : plugin.getPluginConfig().getRewardsGeneral()) {
-            dispatch(template, ph);
-        }
+        dispatchAll(plugin.getPluginConfig().getRewardsGeneral(), ph);
         if (notifyLeader) notify(island, "rewards.general",
                 "%prefix%<white>Votre île a reçu la récompense de participation.", ph);
     }
@@ -52,9 +51,7 @@ public final class RewardService {
         List<String> templates = plugin.getPluginConfig().getRewardsByRank().get(rank);
         if (templates == null || templates.isEmpty()) return;
         Map<String, String> ph = placeholders(island, rank, damage);
-        for (String template : templates) {
-            dispatch(template, ph);
-        }
+        dispatchAll(templates, ph);
         if (notifyLeader) notify(island, "rewards.ranked",
                 "%prefix%<white>Votre île termine <b>#%rank%</b> et reçoit un bonus.", ph);
     }
@@ -94,18 +91,27 @@ public final class RewardService {
     }
 
     private void dispatch(String template, Map<String, String> ph) {
-        String cmd = template;
-        for (Map.Entry<String, String> e : ph.entrySet()) {
-            cmd = cmd.replace("%" + e.getKey() + "%", e.getValue());
+        dispatchAll(List.of(template), ph);
+    }
+
+    void dispatchAll(List<String> templates, Map<String, String> ph) {
+        if (templates.isEmpty()) return;
+        List<String> cmds = new ArrayList<>(templates.size());
+        for (String t : templates) {
+            String cmd = t;
+            for (Map.Entry<String, String> e : ph.entrySet()) {
+                cmd = cmd.replace("%" + e.getKey() + "%", e.getValue());
+            }
+            cmds.add(cmd);
         }
-        final String finalCmd = cmd;
-        // Folia refuses Bukkit.dispatchCommand off the global region for a
-        // ConsoleSender - we schedule there unconditionally.
+        // Une seule tâche globale pour toute la liste — évite N allocations Folia.
         plugin.getScheduler().runGlobal(() -> {
-            try {
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCmd);
-            } catch (Throwable t) {
-                plugin.getLogger().warning("Commande de récompense échouée : '" + finalCmd + "' - " + t.getMessage());
+            for (String cmd : cmds) {
+                try {
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+                } catch (Throwable t) {
+                    plugin.getLogger().warning("Commande de récompense échouée : '" + cmd + "' - " + t.getMessage());
+                }
             }
         });
     }
