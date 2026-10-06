@@ -93,6 +93,8 @@ debug: false
 #   %maxhp%     idem au start
 #   %duration%  durée totale en secondes
 #   %world% %x% %y% %z%   coords du bloc `hooks.spawn.*` ci-dessous
+#   %winner%    pseudo du chef de l'île gagnante  (disponible dans on-end seulement)
+#   %island%    nom de l'île gagnante             (disponible dans on-end seulement)
 #
 # Rien à faire si tu veux garder juste la boss bar : laisse les listes vides.
 hooks:

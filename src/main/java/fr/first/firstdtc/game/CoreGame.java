@@ -207,27 +207,45 @@ public final class CoreGame {
                 sendSummaries(ranking);
             }
 
-            runHookCommands(cfg.getHookOnEnd());
+            // Passe le leader et le nom de l'île gagnante dans les hooks on-end
+            java.util.Map<String, String> hookExtras = new java.util.HashMap<>();
+            if (!ranking.isEmpty()) {
+                IslandStats winner = ranking.get(0).getValue();
+                Island winnerIsland = winner.island();
+                SuperiorPlayer owner = winnerIsland.getOwner();
+                hookExtras.put("winner", owner != null ? owner.getName() : "?");
+                hookExtras.put("island", islandName(winnerIsland));
+            }
+            runHookCommands(cfg.getHookOnEnd(), hookExtras);
             plugin.getGameManager().onGameEnded();
         });
     }
 
     /**
-     * Fires each command line through the console with {@code %world%}, {@code %x%},
-     * {@code %y%}, {@code %z%}, {@code %hp%}, {@code %maxhp%} and {@code %duration%}
-     * substituted from the current config + game state. Runs on the global region
-     * because {@code Bukkit.dispatchCommand} for a ConsoleSender requires it on Folia.
+     * Fires each command line through the console with standard placeholders.
      */
     private void runHookCommands(List<String> commands) {
+        runHookCommands(commands, Map.of());
+    }
+
+    /**
+     * Fires each command line through the console with {@code %world%}, {@code %x%},
+     * {@code %y%}, {@code %z%}, {@code %hp%}, {@code %maxhp%}, {@code %duration%},
+     * and any extra placeholders (e.g. {@code %winner%}, {@code %island%}) substituted.
+     * Runs on the global region because {@code Bukkit.dispatchCommand} for a
+     * ConsoleSender requires it on Folia.
+     */
+    private void runHookCommands(List<String> commands, Map<String, String> extras) {
         if (commands == null || commands.isEmpty()) return;
-        Map<String, String> ph = Map.of(
-                "world",    cfg.getHookSpawnWorld(),
-                "x",        Integer.toString(cfg.getHookSpawnX()),
-                "y",        Integer.toString(cfg.getHookSpawnY()),
-                "z",        Integer.toString(cfg.getHookSpawnZ()),
-                "hp",       roundedString(Math.max(0.0, health)),
-                "maxhp",    roundedString(maxHealth),
-                "duration", Integer.toString(cfg.getDurationSeconds()));
+        java.util.Map<String, String> ph = new java.util.HashMap<>();
+        ph.put("world",    cfg.getHookSpawnWorld());
+        ph.put("x",        Integer.toString(cfg.getHookSpawnX()));
+        ph.put("y",        Integer.toString(cfg.getHookSpawnY()));
+        ph.put("z",        Integer.toString(cfg.getHookSpawnZ()));
+        ph.put("hp",       roundedString(Math.max(0.0, health)));
+        ph.put("maxhp",    roundedString(maxHealth));
+        ph.put("duration", Integer.toString(cfg.getDurationSeconds()));
+        ph.putAll(extras);
         plugin.getRewardService().dispatchAll(commands, ph);
     }
 
