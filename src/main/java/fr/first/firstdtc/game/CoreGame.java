@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -145,7 +146,7 @@ public final class CoreGame {
         if (!ended.compareAndSet(false, true)) return;
         if (tickTask != null) tickTask.cancel();
         hideBossBar();
-        runHookCommands(cfg.getHookOnEnd());
+        runHookCommands(cfg.getHookOnEnd(), Map.of("winner", "", "island", ""));
     }
 
     /**
@@ -207,8 +208,10 @@ public final class CoreGame {
                 sendSummaries(ranking);
             }
 
-            // Passe le leader et le nom de l'île gagnante dans les hooks on-end
-            java.util.Map<String, String> hookExtras = new java.util.HashMap<>();
+                // %winner% et %island% : valeurs vides par défaut si aucune île n'a participé
+            Map<String, String> hookExtras = new HashMap<>();
+            hookExtras.put("winner", "");
+            hookExtras.put("island", "");
             if (!ranking.isEmpty()) {
                 IslandStats winner = ranking.get(0).getValue();
                 Island winnerIsland = winner.island();
