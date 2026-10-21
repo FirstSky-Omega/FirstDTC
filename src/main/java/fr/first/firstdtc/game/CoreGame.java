@@ -146,7 +146,7 @@ public final class CoreGame {
         if (!ended.compareAndSet(false, true)) return;
         if (tickTask != null) tickTask.cancel();
         hideBossBar();
-        runHookCommands(cfg.getHookOnEnd(), Map.of("winner", "", "island", ""));
+        runHookCommands(cfg.getHookOnEnd(), Map.of("winner", "?", "island", "?"));
     }
 
     /**
@@ -208,10 +208,12 @@ public final class CoreGame {
                 sendSummaries(ranking);
             }
 
-                // %winner% et %island% : valeurs vides par défaut si aucune île n'a participé
+                // %winner% et %island% : valeur "?" si aucune île n'a participé
+            // (une chaîne vide serait ignorée par Bukkit à l'exécution de la commande,
+            // ce qui laisse les {1}/{2} du bot Discord non substitués)
             Map<String, String> hookExtras = new HashMap<>();
-            hookExtras.put("winner", "");
-            hookExtras.put("island", "");
+            hookExtras.put("winner", "?");
+            hookExtras.put("island", "?");
             if (!ranking.isEmpty()) {
                 IslandStats winner = ranking.get(0).getValue();
                 Island winnerIsland = winner.island();
