@@ -58,12 +58,26 @@ event:
 
 
 # -------------------------------------------------------------------------
-# Récap privé envoyé à chaque île en fin de partie
+# Récap privé envoyé à chaque île participante en fin de partie
+# Placeholders top-N  : %island% %damage%
+# Placeholders your-rank : %rank% %damage%
+# Placeholder reward-general/ranked : %reward% (et %rank% pour ranked)
 # -------------------------------------------------------------------------
-summary:
-  header: "%prefix%<white>Résumé des dégâts <gray>-</gray> <white>%island%"
-  line: "<gray> - <white>%player%<dark_gray>:</dark_gray> <white>%damage% <gray>dégâts"
-  total: "%prefix%<gray>Total île <dark_gray>|</dark_gray> <white>%damage% <gray>dégâts <dark_gray>|</dark_gray> <gray>classement <white>#%rank%"
+recap:
+  header: "%prefix%<white><b>Destroy the Core — Résultats</b>"
+  top-1: " <dark_gray>┃ <gradient:#FFD700:#FFA500>🥇 <b>#1</b></gradient> <white>%island% <dark_gray>»</dark_gray> <red>%damage% <gray>dégâts"
+  top-2: " <dark_gray>┃ <gray>🥈 <b>#2</b></gray> <white>%island% <dark_gray>»</dark_gray> <red>%damage% <gray>dégâts"
+  top-3: " <dark_gray>┃ <color:#CD7F32>🥉 <b>#3</b></color> <white>%island% <dark_gray>»</dark_gray> <red>%damage% <gray>dégâts"
+  separator: "<dark_gray>──────────────────────────────────"
+  your-rank: " <dark_gray>┃ <gray>Votre île <dark_gray>·</dark_gray> <white>#%rank% <dark_gray>»</dark_gray> <red>%damage% <gray>dégâts"
+  reward-general: " <dark_gray>┃ <gray>Participation <dark_gray>»</dark_gray> <red>%reward%"
+  reward-ranked: " <dark_gray>┃ <gray>Bonus rang <white>#%rank% <dark_gray>»</dark_gray> <red>%reward%"
+  # Texte affiché pour chaque récompense — à synchroniser avec rewards.* dans config.yml
+  reward-display:
+    general: "100 000 %nexo_sqr_money%"
+    rank-1: "1 000 000 %nexo_sqr_money%"
+    rank-2: "500 000 %nexo_sqr_money%"
+    rank-3: "250 000 %nexo_sqr_money%"
 
 
 # -------------------------------------------------------------------------

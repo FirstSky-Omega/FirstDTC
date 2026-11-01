@@ -293,42 +293,81 @@ public final class CoreGame {
     }
 
     private void sendSummaries(List<Map.Entry<UUID, IslandStats>> ranking) {
+        if (ranking.isEmpty()) return;
+        int topSize = Math.min(3, ranking.size());
+
         for (int i = 0; i < ranking.size(); i++) {
             int rank = i + 1;
             IslandStats stats = ranking.get(i).getValue();
             Island island = stats.island();
-            Map<String, String> islandPh = Map.of(
+            Map<String, String> myPh = Map.of(
                     "island", islandName(island),
                     "damage", roundedString(stats.total()),
-                    "rank", Integer.toString(rank));
+                    "rank",   Integer.toString(rank));
 
-            List<IslandStats.MemberDamage> members = stats.topMembers();
+            String displayGeneral = cfg.messages().get("recap.reward-display.general", "");
+            String displayRank    = cfg.messages().get("recap.reward-display.rank-" + rank, "");
 
-            // Parse per recipient so PAPI can resolve player-specific placeholders
-            // (%player_name%, %nexo_glyph_x%, %vault_eco_balance%, etc.) with the
-            // right audience. It's a bit more work than caching one Component set
-            // but keeps the message truly personal.
             for (SuperiorPlayer member : island.getIslandMembers(true)) {
                 Player online = member.asPlayer();
                 if (online == null || !online.isOnline()) continue;
 
-                online.sendMessage(Msg.parse(online,
-                        cfg.messages().get("summary.header",
-                                "%prefix%<white>Résumé des dégâts <gray>-</gray> <white>%island%"),
-                        islandPh));
-                for (IslandStats.MemberDamage md : members) {
+                // En-tête
+                online.sendMessage(Msg.parse(online, cfg.messages().get("recap.header",
+                        "%prefix%<white><b>Destroy the Core — Résultats</b>"), Map.of()));
+
+                // Top 3
+                for (int t = 0; t < topSize; t++) {
+                    IslandStats ts = ranking.get(t).getValue();
+                    Map<String, String> tPh = Map.of(
+                            "island", islandName(ts.island()),
+                            "damage", roundedString(ts.total()));
                     online.sendMessage(Msg.parse(online,
-                            cfg.messages().get("summary.line",
-                                    "<gray> - <white>%player%<dark_gray>:</dark_gray> <white>%damage% <gray>dégâts"),
-                            Map.of("player", md.name(), "damage", roundedString(md.damage()))));
+                            cfg.messages().get("recap.top-" + (t + 1), defaultTopLine(t + 1)), tPh));
                 }
+
+                // Séparateur
+                online.sendMessage(Msg.parse(
+                        cfg.messages().get("recap.separator",
+                                "<dark_gray>──────────────────────────────────")));
+
+                // Position personnelle
                 online.sendMessage(Msg.parse(online,
-                        cfg.messages().get("summary.total",
-                                "%prefix%<gray>Total île <dark_gray>|</dark_gray> <white>%damage% <gray>dégâts "
-                                + "<dark_gray>|</dark_gray> <gray>classement <white>#%rank%"),
-                        islandPh));
+                        cfg.messages().get("recap.your-rank",
+                                " <dark_gray>┃ <gray>Votre île <dark_gray>·</dark_gray>"
+                                + " <white>#%rank% <dark_gray>»</dark_gray> <red>%damage% <gray>dégâts"),
+                        myPh));
+
+                // Récompense participation
+                if (!displayGeneral.isEmpty()) {
+                    online.sendMessage(Msg.parse(online,
+                            cfg.messages().get("recap.reward-general",
+                                    " <dark_gray>┃ <gray>Participation <dark_gray>»</dark_gray> <red>%reward%"),
+                            Map.of("reward", displayGeneral)));
+                }
+
+                // Bonus de rang (seulement si un display est configuré pour ce rang)
+                if (!displayRank.isEmpty()) {
+                    online.sendMessage(Msg.parse(online,
+                            cfg.messages().get("recap.reward-ranked",
+                                    " <dark_gray>┃ <gray>Bonus rang <white>#%rank%"
+                                    + " <dark_gray>»</dark_gray> <red>%reward%"),
+                            Map.of("rank", Integer.toString(rank), "reward", displayRank)));
+                }
             }
         }
+    }
+
+    private static String defaultTopLine(int rank) {
+        return switch (rank) {
+            case 1 -> " <dark_gray>┃ <gradient:#FFD700:#FFA500>🥇 <b>#1</b></gradient>"
+                    + " <white>%island% <dark_gray>»</dark_gray> <red>%damage% <gray>dégâts";
+            case 2 -> " <dark_gray>┃ <gray>🥈 <b>#2</b></gray>"
+                    + " <white>%island% <dark_gray>»</dark_gray> <red>%damage% <gray>dégâts";
+            case 3 -> " <dark_gray>┃ <color:#CD7F32>🥉 <b>#3</b></color>"
+                    + " <white>%island% <dark_gray>»</dark_gray> <red>%damage% <gray>dégâts";
+            default -> " <dark_gray>┃ <white>#%rank% %island% <dark_gray>»</dark_gray> <red>%damage% <gray>dégâts";
+        };
     }
 
 
