@@ -208,19 +208,24 @@ public final class CoreGame {
                 sendSummaries(ranking);
             }
 
-                // %winner% et %island% : valeur "?" si aucune île n'a participé
-            // (une chaîne vide serait ignorée par Bukkit à l'exécution de la commande,
-            // ce qui laisse les {1}/{2} du bot Discord non substitués)
+            // Passe le top 3 complet dans les hooks on-end.
+            // "?" comme défaut : une valeur vide serait ignorée par Bukkit au split
+            // et laisserait {N} non substitués dans le template du bot Discord.
             Map<String, String> hookExtras = new HashMap<>();
-            hookExtras.put("winner", "?");
-            hookExtras.put("island", "?");
-            if (!ranking.isEmpty()) {
-                IslandStats winner = ranking.get(0).getValue();
-                Island winnerIsland = winner.island();
-                SuperiorPlayer owner = winnerIsland.getOwner();
-                hookExtras.put("winner", owner != null ? owner.getName() : "?");
-                hookExtras.put("island", islandName(winnerIsland));
+            for (int t = 1; t <= 3; t++) {
+                if (t <= ranking.size()) {
+                    Island ti = ranking.get(t - 1).getValue().island();
+                    SuperiorPlayer to = ti.getOwner();
+                    hookExtras.put("winner" + t, to != null && to.getName() != null ? to.getName() : "?");
+                    hookExtras.put("island" + t, islandName(ti));
+                } else {
+                    hookExtras.put("winner" + t, "?");
+                    hookExtras.put("island" + t, "?");
+                }
             }
+            // Alias rétrocompat : %winner% / %island% = top 1
+            hookExtras.put("winner", hookExtras.get("winner1"));
+            hookExtras.put("island", hookExtras.get("island1"));
             runHookCommands(cfg.getHookOnEnd(), hookExtras);
             plugin.getGameManager().onGameEnded();
         });
